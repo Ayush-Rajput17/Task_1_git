@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple JWT Login</title>
+  <style>
+    body { font-family: Arial; background: #f2f2f2; padding: 20px; }
+    .box { background: white; max-width: 400px; margin: auto; padding: 20px; }
+    label, input, button { display: block; width: 100%; box-sizing: border-box; }
+    input, button { padding: 9px; margin: 6px 0 12px; }
+    button { background: #2563eb; color: white; border: 0; cursor: pointer; }
+    #profile { display: none; border-top: 1px solid #ddd; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Register</h1>
+
+    <form id="registerForm">
+      <label for="registerName">Name</label>
+      <input id="registerName" name="name" type="text" required>
+
+      <label for="registerPassword">Password</label>
+      <input id="registerPassword" name="password" type="password" required>
+
+      <button type="submit">Register</button>
+    </form>
+
+    <h1>Login</h1>
+
+    <form id="loginForm">
+      <label for="loginName">Name</label>
+      <input id="loginName" name="name" type="text" required>
+
+      <label for="loginPassword">Password</label>
+      <input id="loginPassword" name="password" type="password" required>
+
+      <button type="submit">Login</button>
+    </form>
+
+    <p id="message"></p>
+
+    <div id="profile">
+      <h2>Welcome</h2>
+      <p id="userDetails"></p>
+      <button id="logoutButton" type="button">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const message = document.getElementById('message');
+    const profile = document.getElementById('profile');
+    const userDetails = document.getElementById('userDetails');
+    const logoutButton = document.getElementById('logoutButton');
+
+    async function sendForm(event, url) {
+      event.preventDefault();
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
+      });
+
+      const data = await response.json();
+      message.textContent = data.message;
+
+      if (url === '/api/login' && response.ok) {
+        localStorage.setItem('token', data.token);
+        registerForm.style.display = 'none';
+        loginForm.style.display = 'none';
+        showProfile();
+      }
+    }
+
+    registerForm.onsubmit = event => sendForm(event, '/api/register');
+    loginForm.onsubmit = event => sendForm(event, '/api/login');
+
+    logoutButton.addEventListener('click', function () {
+      localStorage.removeItem('token');
+      profile.style.display = 'none';
+      registerForm.style.display = 'block';
+      loginForm.style.display = 'block';
+      message.textContent = 'You have logged out.';
+    });
+
+    async function showProfile() {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        return;
+      }
+
+      const response = await fetch('/api/profile', {
+        headers: {
+          Authorization: 'Bearer ' + token
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        userDetails.textContent = data.name;
+        profile.style.display = 'block';
+      } else {
+        localStorage.removeItem('token');
+      }
+    }
+
+    showProfile();
+  </script>
+</body>
+</html>
